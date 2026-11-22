@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>알 깨기</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      background: radial-gradient(circle at 50% 40%, #fff8e7 0%, #f3e2c0 100%);
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      color: #4a3b2a;
+      overflow: hidden;
+      user-select: none;
+      transition: background 0.4s;
+    }
+
+    body.angry { background: radial-gradient(circle at 50% 40%, #ffe3e3 0%, #f5a3a3 100%); }
+
+    .counter { font-size: 1.4rem; font-weight: 700; min-height: 2rem; }
+    .counter strong { font-size: 2rem; color: #c0562b; }
+
+    /* ---------- 알 ---------- */
+    .egg {
+      position: relative;
+      width: 200px;
+      height: 260px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .egg:focus-visible { outline: 3px dashed #c0562b; outline-offset: 12px; border-radius: 50%; }
+
+    .shell {
+      position: absolute;
+      inset: 0;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      background: radial-gradient(circle at 35% 30%, #ffffff 0%, #fdf3df 45%, #e9d3a8 100%);
+      box-shadow: inset -12px -18px 30px rgba(150, 110, 60, 0.25);
+      transition: transform 0.9s cubic-bezier(.2,.8,.3,1), opacity 0.9s;
+    }
+    .shell.top    { clip-path: polygon(0 0,100% 0,100% 52%,90% 45%,80% 55%,70% 45%,60% 55%,50% 45%,40% 55%,30% 45%,20% 55%,10% 45%,0 52%); }
+    .shell.bottom { clip-path: polygon(0 52%,10% 45%,20% 55%,30% 45%,40% 55%,50% 45%,60% 55%,70% 45%,80% 55%,90% 45%,100% 52%,100% 100%,0 100%); }
+
+    .cracks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .cracks path {
+      fill: none;
+      stroke: #6b4f2e;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .cracks path.show { opacity: 1; }
+
+    .shadow {
+      position: absolute;
+      left: 50%;
+      bottom: -24px;
+      width: 160px;
+      height: 22px;
+      transform: translateX(-50%);
+      background: rgba(80, 50, 20, 0.18);
+      border-radius: 50%;
+      filter: blur(4px);
+    }
+
+    .yolk {
+      position: absolute;
+      left: 50%;
+      bottom: 10px;
+      width: 150px;
+      height: 70px;
+      transform: translateX(-50%) scale(0);
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 45%, #ffcf33 0%, #ffb300 35%, #fff6e0 37%, #fffaf0 100%);
+      transition: transform 0.5s 0.3s cubic-bezier(.3,1.6,.5,1);
+    }
+
+    .egg.hit { animation: wobble 0.18s; }
+    @keyframes wobble {
+      0%, 100% { transform: rotate(0); }
+      25% { transform: rotate(-6deg) scale(0.97); }
+      75% { transform: rotate(6deg) scale(0.97); }
+    }
+
+    .egg.broken { cursor: default; }
+    .egg.broken .shell.top    { transform: translate(60px, -140px) rotate(55deg); opacity: 0.9; }
+    .egg.broken .shell.bottom { transform: translate(-30px, 60px) rotate(-20deg) scaleY(0.6); opacity: 0.9; }
+    .egg.broken .cracks { opacity: 0; }
+    .egg.broken .yolk { transform: translateX(-50%) scale(1); }
+
+    .hint { font-size: 0.95rem; opacity: 0.6; min-height: 1.2rem; }
+
+    /* ---------- 면박 ---------- */
+    .scold {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      text-align: center;
+      padding: 0 16px;
+    }
+    .scold.show { display: flex; }
+    .scold h1 {
+      font-size: clamp(2rem, 8vw, 4rem);
+      color: #c0262b;
+      animation: shout 0.5s ease-out, shake 0.4s 0.5s 3;
+      text-shadow: 3px 3px 0 #fff;
+    }
+    .scold p { font-size: 1.15rem; min-height: 1.6rem; }
+    .scold button {
+      margin-top: 6px;
+      padding: 12px 26px;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 999px;
+      background: #4a3b2a;
+      color: #fff;
+      cursor: pointer;
+    }
+    .scold button:hover { background: #2e2418; }
+
+    @keyframes shout {
+      0% { transform: scale(3); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="counter" id="counter">남은 횟수: <strong>100</strong></div>
+
+  <button class="egg" id="egg" aria-label="알 두드리기">
+    <div class="shadow"></div>
+    <div class="yolk"></div>
+    <div class="shell top"></div>
+    <div class="shell bottom"></div>
+    <svg class="cracks" viewBox="0 0 200 260" aria-hidden="true">
+      <path d="M100 40 L94 62 L104 78 L97 96" />
+      <path d="M60 80 L72 92 L66 108 L78 118" />
+      <path d="M140 70 L130 88 L142 100 L134 120" />
+      <path d="M97 96 L84 112 L92 128 L80 142" />
+      <path d="M134 120 L120 132 L128 150 L114 160" />
+      <path d="M78 118 L60 130 L68 146 L50 158" />
+      <path d="M80 142 L100 150 L114 160 L136 152 L150 162" />
+      <path d="M50 158 L70 170 L92 162 L110 176 L130 168" />
+      <path d="M20 135 L40 128 L60 140 L80 130 L100 140 L120 130 L140 140 L160 130 L180 136" />
+    </svg>
+  </button>
+
+  <div class="hint" id="hint">톡톡 두드려 보세요</div>
+
+  <div class="scold" id="scold">
+    <h1>그걸 깨고 앉아있냐!!</h1>
+    <p id="scoldSub"></p>
+    <button id="retry">반성하고 다시 하기</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
